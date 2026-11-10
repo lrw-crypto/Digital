@@ -107,7 +107,7 @@ function vLogin() {
   <p class="note" style="margin:4px 0 0">中文、英文、數字都可以。用中文輸入法時,數字鍵會變成注音符號,<b>請改按下面的數字鍵</b>(也可刪除、清除)。要輸入英文字母,按 <a href="#" id="kbt">⌨ 英文字母鍵盤</a> 用畫面上的鍵盤輸入。英文不分大小寫。</p><div id="kq" class="kb"><button type="button" data-c="1">1</button><button type="button" data-c="2">2</button><button type="button" data-c="3">3</button><button type="button" data-c="4">4</button><button type="button" data-c="5">5</button><button type="button" data-c="6">6</button><button type="button" data-c="7">7</button><button type="button" data-c="8">8</button><button type="button" data-c="9">9</button><button type="button" data-c="0">0</button><button type="button" data-c="⌫" class="del">⌫ 刪除</button><button type="button" data-c="CLR" class="del">清除</button></div><div id="kb" class="kb" hidden></div>
   <label>4 位數密碼 <span class="note">(用下面的數字鍵輸入,或直接打字)</span></label><input id="pin" type="text" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="例如 1234">
   <div class="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button type="button" data-n="${n}">${n}</button>`).join("")}<button type="button" data-n="C">清除</button><button type="button" data-n="0">0</button><button type="button" data-n="B">←</button></div>
-  <p id="err" class="note" style="color:var(--bad);min-height:22px"></p><div class="hint" style="margin:0 0 12px">⚠️ 請牢記你取的「名字」和「密碼」!以後要用<b>完全相同</b>的名字和密碼登入,才看得到自己的錯題與作答紀錄。忘記了無法找回。</div><button class="btn" id="ok">進入</button>
+  <p id="err" class="note" style="color:var(--bad);min-height:22px"></p><div class="hint" style="margin:0 0 12px">⚠️ 請牢記你取的「名字」和「密碼」!以後要在同一瀏覽器，用<b>相同代稱與密碼</b>登入，就能繼續刷自己的錯題。</div><button class="btn" id="ok">進入</button>
   <p class="note" style="margin-top:14px">${CLOUD() ? "紀錄會自動存到雲端,換手機或電腦用同一個名字和密碼登入即可。" : "紀錄存在這台裝置的瀏覽器中。要換手機或電腦,請到「我的紀錄」匯出/匯入。"}</p></div>`);
   let busy = false;
   const submit = async () => {
@@ -141,6 +141,7 @@ function vLogin() {
       if (d && !localOk) return err.textContent = "密碼不對";
       if (!d) d = blank(p);
     }
+    S.sel.clear();
     S.user = n; S.data = d; SY.pin = CLOUD() ? p : null; ls.set(key(n), JSON.stringify(d)); ls.set("digital:last", n);
     try { sessionStorage.setItem("digital:cur", n); if (CLOUD()) sessionStorage.setItem("digital:pin", p); } catch {}
     S.view = "practice"; render();
@@ -162,6 +163,7 @@ function pool() { const c = S.cfg; return PQ().filter(q => (!c.units.length || c
 function vPractice() {
   const c = S.cfg, uAvail = unitsOf(), yAvail = [...new Set(PQ().map(q => q.year))].sort().reverse(), nAvail = [...new Set(PQ().map(q => q.num))].sort();
   draw(`<h1>自由練習 <span class="tag">數位科技概論</span></h1><p class="lead">挑單元與試卷,答完馬上看詳解。答錯的題目會自動進錯題本。</p>
+  <div class="card"><div class="row"><button class="btn ghost" data-go="wrong">刷錯題（${wrongList().length} 題待複習）</button><span class="note">回練答對一次就會移出錯題本。</span></div></div>
   <div class="card"><h2>單元(不選 = 全部)</h2><div class="row" id="us">${uAvail.map(u => `<button class="chip ${c.units.includes(u) ? "on" : ""}" data-u="${esc(u)}">${esc(u)}</button>`).join("")}</div></div>
   <div class="card"><h2>學年度(不選 = 全部)</h2><div class="row">${yAvail.map(y => `<button class="chip ${c.years.includes(y) ? "on" : ""}" data-y="${y}">${y}學年</button>`).join("")}</div>
   <h2 style="margin-top:14px">第幾次模擬考(不選 = 全部)</h2><div class="row">${nAvail.map(n => `<button class="chip ${c.nums.includes(n) ? "on" : ""}" data-nn="${n}">第${n}次</button>`).join("")}</div></div>
@@ -178,7 +180,7 @@ function vPractice() {
 
 /* ---------- 模擬考 ---------- */
 function vExams() {
-  draw(`<h1>模擬考</h1><p class="lead">商管群專一數位科技（原卷第 26–50 題）。整份題目、限時 ${EXAM_MIN} 分鐘,交卷後才顯示答案與得分。</p>
+  draw(`<h1>模擬考</h1><p class="lead">商管群專一數位科技（原卷第 26–50 題）。整份題目、限時 ${EXAM_MIN} 分鐘,交卷後可查看得分，並逐題閱讀解題步驟。</p>
   ${[...new Set(examsOf().map(x => x.split("-")[0]))].map(y => `<h2 style="margin:18px 0 8px">${y} 學年度</h2><div class="grid">${examsOf().filter(x => x.startsWith(y + "-")).sort().map(x => { const done = S.data.log.some(l => l.m === "exam" && l.id.startsWith(x + "-" + paper() + "-")); return `<div class="tile"><b>第${x.split("-")[1]}次</b><small>${PQ().filter(q => q.exam === x).length} 題${done ? " · 做過" : ""}</small><p style="margin:10px 0 0"><button class="btn sm" data-x="${x}">開始</button></p></div>`; }).join("")}</div>`).join("") || '<p class="empty">這個卷別還沒有題庫</p>'}`);
   $app.querySelectorAll("[data-x]").forEach(b => b.onclick = () => start("exam", PQ().filter(q => q.exam === b.dataset.x).sort((a, b) => a.q - b.q)));
 }
@@ -188,17 +190,24 @@ S.sel = new Set();
 function vWrong() {
   const l = wrongList().map(id => BY[id]).sort((a, b) => S.data.wrong[b.id].t - S.data.wrong[a.id].t), m = Object.keys(S.data.mastered).length;
   S.sel = new Set([...S.sel].filter(id => l.some(q => q.id === id)));
-  draw(`<h1>錯題本</h1><p class="lead">在這裡答對的題目,會從錯題本移除(記入「已克服」)。答錯就繼續留著。</p>
+  draw(`<h1>錯題本</h1><p class="lead">在這裡回練答對一次，該題就會移出待複習清單，並計入「已克服」。答錯的題目會留在清單。</p>
   <div class="card"><div class="count">${l.length}<small style="font-size:16px;color:var(--sub)"> 題待複習</small></div><p class="note">已克服 ${m} 題</p>
-  <button class="btn" id="go" ${l.length ? "" : "disabled"}>刷錯題 →</button></div>
+  <button class="btn" id="go" ${l.length ? "" : "disabled"}>${S.sel.size ? "練習已勾選錯題" : "練習全部錯題"} →</button></div>
   ${l.length ? `<div class="card"><h2>清單 <span class="note" id="selc"></span></h2>
   <div class="row" style="margin-bottom:10px"><button class="chip" id="sa">全選</button><button class="chip" id="s2">只選一錯再錯(錯 2 次以上)</button><button class="chip" id="sn">全部取消</button></div>
   ${l.map(q => `<label class="wr"><input type="checkbox" data-s="${esc(q.id)}" ${S.sel.has(q.id) ? "checked" : ""}><span><span class="tag">${exLabel(q.exam)} 第${q.q}題</span> ${esc(q.unit)}・${esc(q.topic)} <span class="note">錯 ${S.data.wrong[q.id].n} 次</span></span></label>`).join("")}
   <div class="pdfbar"><label class="inl"><input type="checkbox" id="wans" checked> 附解答與詳解頁</label><label class="inl"><input type="checkbox" id="wsp" checked> 每題留空白計算區</label>
   <button class="btn" id="pdf">產生練習卷(列印 / 存成 PDF)</button></div></div>` : '<p class="empty">目前沒有錯題,太強了!</p>'}`);
-  const b = $app.querySelector("#go"); if (b) b.onclick = () => start("wrong", shuffle(l));
+  $app.querySelector("#go").onclick = () => {
+    const selected = l.filter(q => S.sel.has(q.id));
+    if (l.length) start("wrong", shuffle(selected.length ? selected : l));
+  };
   if (!l.length) return;
-  const upd = () => { $app.querySelector("#selc").textContent = `(已勾選 ${S.sel.size} 題)`; $app.querySelectorAll("[data-s]").forEach(c => c.checked = S.sel.has(c.dataset.s)); };
+  const upd = () => {
+    $app.querySelector("#selc").textContent = `（已勾選 ${S.sel.size} 題）`;
+    $app.querySelector("#go").textContent = S.sel.size ? "練習已勾選錯題 →" : "練習全部錯題 →";
+    $app.querySelectorAll("[data-s]").forEach(c => c.checked = S.sel.has(c.dataset.s));
+  };
   $app.querySelectorAll("[data-s]").forEach(c => c.onchange = () => { c.checked ? S.sel.add(c.dataset.s) : S.sel.delete(c.dataset.s); upd(); });
   $app.querySelector("#sa").onclick = () => { S.sel = new Set(l.map(q => q.id)); upd(); };
   $app.querySelector("#s2").onclick = () => { S.sel = new Set(l.filter(q => S.data.wrong[q.id].n >= 2).map(q => q.id)); upd(); if (!S.sel.size) alert("目前沒有錯 2 次以上的題目"); };
@@ -222,8 +231,8 @@ function vPrint() {
   ${contextHtml(q)}${q.scan ? scanHtml(q) : `<div class="ps">${rich(q.stem)}</div><div class="pos ${anyImg(q) ? "img" : ""}">${ks.map((k, j) => opt(q, k, j)).join("")}</div>`}${sp ? '<div class="pwork">計算區</div>' : ""}</section>`).join("")}
   ${ans ? `<div class="pbreak"></div><div class="phead"><h1>解答與詳解</h1></div>
   <p class="pans"><b>答案速查:</b>${qs.map((q, i) => `${i + 1}. ${q.accept_all ? "送分" : q.answer}`).join("　")}</p>
-  ${qs.map((q, i) => { const e = q.explain || {}; return `<section class="pe"><div class="pt"><b>${i + 1}.</b> 答案 ${q.accept_all ? "(送分)" : q.answer}　<span class="src">${esc(q.unit)}・${esc(q.topic)}</span></div>
-  ${e.concept ? `<div><b>考點:</b>${rich(e.concept)}</div>` : ""}${(e.steps || []).length ? `<ol>${e.steps.map(x => `<li>${rich(x)}</li>`).join("")}</ol>` : ""}${q.official ? `<div>${rich(q.official)}</div>` : ""}</section>`; }).join("")}` : ""}</div>`);
+  ${qs.map((q, i) => { const e = getDigitalLesson(q); return `<section class="pe"><div class="pt"><b>${i + 1}.</b> 答案 ${q.accept_all ? "(送分)" : q.answer}　<span class="src">${esc(q.unit)}・${esc(q.topic)}</span></div>
+  ${lessonHtml(e)}</section>`; }).join("")}` : ""}</div>`);
   $app.querySelector("#doprint").onclick = () => window.print();
 }
 /* ---------- 作答流程 ---------- */
@@ -248,16 +257,25 @@ function qBlock(q, picked, reveal, noFeedbackSel) {
 const scanned = (src, alt) => `<img class="paper-scan" src="${esc(src)}" alt="${esc(alt)}">`;
 const scanHtml = q => scanned(q.scan, [q.stem, ...q.options.map((o, i) => "ABCD"[i] + ". " + o)].join(" "));
 const contextHtml = q => q.context ? `<div class="case"><b>共用題組</b>${q.contextScan ? scanned(q.contextScan, q.context) : `<div>${rich(q.context)}</div>`}</div>` : "";
+function lessonHtml(lesson) {
+  const comparisons = Object.entries(lesson.distractors || {});
+  return `<h3>這題在考什麼</h3><div>${rich(lesson.concept)}</div>
+  <h3>解題步驟</h3><ol>${lesson.steps.map(step => `<li>${rich(step)}</li>`).join("")}</ol>
+  ${comparisons.length ? `<h3>選項比對</h3><ul>${comparisons.map(([letter, reason]) => `<li><b>${esc(letter)}.</b> ${rich(reason)}</li>`).join("")}</ul>` : ""}
+  ${lesson.pitfalls ? `<h3>常見陷阱</h3><div>${rich(lesson.pitfalls)}</div>` : ""}`;
+}
+
 function expHtml(q, picked) {
-  const ok = isOk(q, picked), e = q.explain || {}, dis = e.distractors || {};
-  return `<div class="verdict ${ok ? "ok" : "bad"}">${ok ? "答對了!" : `答錯了。正確答案是 ${q.answer}`}${q.accept_all ? "(本題官方一律給分)" : ""}</div>
-  <div class="exp">${!ok && picked && dis[picked] ? `<div class="hint">你選 ${picked}:${rich(dis[picked])}</div>` : ""}
-  ${e.concept ? `<h3>這題在考什麼</h3><div>${rich(e.concept)}</div>` : ""}
-  ${(e.steps || []).length ? `<h3>解題步驟</h3><ol>${e.steps.map(s => `<li>${rich(s)}</li>`).join("")}</ol>` : ""}
-  ${e.pitfalls ? `<h3>常見陷阱</h3><div>${rich(e.pitfalls)}</div>` : ""}
-  ${Object.keys(dis).filter(k => k !== picked).length ? `<details><summary>其他選項為什麼不對</summary>${Object.keys(dis).filter(k => k !== picked).map(k => `<p style="margin:6px 0"><b>${k}</b>:${rich(dis[k])}</p>`).join("")}</details>` : ""}
-  ${q.official ? `<h3>原卷解析</h3><div>${rich(q.official)}</div>` : `<p class="note">原卷提供本題答案。</p>`}
-  ${q.verified === false ? `<div class="hint">這題的解析還在請老師確認,若和你算的不同,請以老師為準。</div>` : ""}</div>`;
+  const ok = isOk(q, picked);
+  const lesson = getDigitalLesson(q);
+  const reason = lesson.distractors?.[picked];
+  const verdict = ok ? "答對了！" : `${picked ? "答錯了" : "這題未作答"}。正確答案是 ${esc(q.answer)}`;
+  return `<div class="verdict ${ok ? "ok" : "bad"}">${verdict}</div>
+  <div class="exp">
+  ${!ok && picked && reason ? `<div class="hint"><b>你選了 ${esc(picked)}。</b> ${rich(reason)}</div>` : ""}
+  ${lessonHtml(lesson)}
+  ${q.official ? `<details><summary>查看原卷解析</summary><div>${rich(q.official)}</div></details>` : ""}
+  </div>`;
 }
 
 function vRun() {
