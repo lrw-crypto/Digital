@@ -1,6 +1,7 @@
 "use strict";
 const QS = window.QUESTIONS || [];
 QS.forEach(q => { if (q.group) { const g = window.CONTEXTS[q.group]; q.context = g.text; q.contextScan = g.scan; q.contextFigure = g.figure; } q.paper = "A"; q.year = q.exam.split("-")[0]; q.num = q.exam.split("-")[1]; });
+QS.forEach(q => { if (q.scan && QuizVisuals.textOnly(q)) delete q.scan; });
 const BY = Object.fromEntries(QS.map(q => [q.id, q]));
 const UNITS_L = ["電腦與數位資料","網路與通訊","資安與資訊倫理","作業系統與軟體","文書與簡報","試算表與資料處理","影像與多媒體","網頁與程式設計","雲端與新興科技","電子商務與數位服務"];
 const UNITS = { indexOf(u) { return UNITS_L.indexOf(u); } };
